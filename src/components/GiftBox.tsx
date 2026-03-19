@@ -1,4 +1,6 @@
 import React from 'react';
+import { motion } from 'framer-motion';
+import { SITE_CONFIG } from '../config';
 
 interface GiftBoxProps {
   isOpen: boolean;
@@ -17,7 +19,15 @@ export const GiftBox: React.FC<GiftBoxProps> = ({ isOpen, onClick }) => {
           <div className="ribbon-loop right"></div>
         </div>
       </div>
-      {!isOpen && <div className="gift-text">🎁 Aprimi!</div>}
+      {!isOpen && (
+        <motion.div
+          className="gift-text"
+          animate={{ y: [0, -5, 0] }}
+          transition={{ repeat: Infinity, duration: 2 }}
+        >
+          {SITE_CONFIG.testoBottoneRegalo}
+        </motion.div>
+      )}
     </div>
   );
 };

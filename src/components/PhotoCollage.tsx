@@ -1,11 +1,15 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SITE_CONFIG } from '../config';
 
 // Dynamically import all images in the photos directory
 const images = import.meta.glob('/src/assets/photos/*.{png,jpg,jpeg,gif,webp,heic}', { eager: true });
 
 export const PhotoCollage: React.FC = () => {
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  
+  // Track which photos have completed their entrance animation (the scatter drop sequence)
+  const [finishedIds, setFinishedIds] = useState<number[]>([]);
 
   const photoUrls = useMemo(() => {
     return Object.values(images).map((mod: any) => mod.default);
@@ -47,6 +51,7 @@ export const PhotoCollage: React.FC = () => {
       {photosData.map((data, index) => {
         // Hide the underlying card slightly when it's selected to prevent visual duplication during morph
         const isSelected = selectedId === data.id;
+        const isFinished = finishedIds.includes(data.id);
 
         return (
           // Wrapper to center the element exactly so framer motion can use pure numerical offset values for fluid animation
@@ -54,26 +59,48 @@ export const PhotoCollage: React.FC = () => {
             <motion.div
               layoutId={`photo-${data.id}`}
               className="photo-card"
-              onClick={() => setSelectedId(data.id)}
+              onClick={() => {
+                // Prevent clicking before the photo has landed, to avoid interrupting the initial sequence
+                if (isFinished) {
+                  setSelectedId(data.id);
+                }
+              }}
+              onAnimationComplete={() => {
+                // Register this photo sequence as completed so we can safely enable hover and clicks
+                setFinishedIds(prev => prev.includes(data.id) ? prev : [...prev, data.id]);
+              }}
               style={{ 
-                cursor: 'zoom-in',
+                cursor: isFinished ? 'zoom-in' : 'default', // Don't hint clickability until it lands
                 opacity: isSelected ? 0 : 1
               }}
               initial={{ scale: 0, opacity: 0, x: 0, y: 0, rotate: 0 }}
-              animate={isSelected ? undefined : {
-                scale: [0, 1.2, 1.2, 1], // Start 0 -> Pop up 1.2 -> Read time 1.2 -> scale down to land 1
-                opacity: [0, 1, 1, 1], // Fade in immediately -> stay 1 -> stay 1 -> stay 1
-                x: [0, 0, 0, data.x], // stay center -> stay center -> wait -> slide to target X
-                y: [0, 0, 0, data.y], // stay center -> stay center -> wait -> slide to target Y
-                rotate: [0, 0, 0, data.rotation] // wait centered -> wait -> rotate gently during landing move
-              }}
-              transition={{
+              
+              // Only use the complex staggered array if it hasn't finished.
+              // Once finished, we supply fixed numeric end-states so Framer Motion doesn't replay the array when hover stops.
+              animate={isSelected ? undefined : (
+                isFinished ? {
+                  scale: 1,
+                  opacity: 1,
+                  x: data.x, 
+                  y: data.y, 
+                  rotate: data.rotation
+                } : {
+                  scale: [0, 1.2, 1.2, 1], // Start 0 -> Pop up 1.2 -> Read time 1.2 -> scale down to land 1
+                  opacity: [0, 1, 1, 1], // Fade in immediately -> stay 1 -> stay 1 -> stay 1
+                  x: [0, 0, 0, data.x], // stay center -> stay center -> wait -> slide to target X
+                  y: [0, 0, 0, data.y], // stay center -> stay center -> wait -> slide to target Y
+                  rotate: [0, 0, 0, data.rotation] // wait centered -> wait -> rotate gently during landing move
+                }
+              )}
+              transition={isFinished ? { type: "tween", duration: 0.2 } : {
                 duration: 3.5, // Slower sequence overall
                 times: [0, 0.15, 0.6, 1], // 15% pop up, 15-60% read time, 60-100% fly out
                 delay: index * 3.5, // Sequential wait matching exact duration to prevent any overlap
                 ease: "easeInOut"
               }}
-              whileHover={!isSelected ? { 
+              
+              // Only apply hover interactions when the initial landing sequence is fully complete
+              whileHover={(!isSelected && isFinished) ? { 
                 scale: 1.1, 
                 zIndex: 50, 
                 boxShadow: "0 25px 50px rgba(0,0,0,0.4)",
@@ -81,7 +108,7 @@ export const PhotoCollage: React.FC = () => {
               } : undefined}
             >
               {data.url === 'placeholder' ? (
-                <div className="placeholder">Aggiungi foto in src/assets/photos</div>
+                <div className="placeholder">{SITE_CONFIG.testoPlaceholderFoto}</div>
               ) : (
                 <img src={data.url as string} alt={`Foto Papà ${index + 1}`} />
               )}
@@ -133,7 +160,7 @@ export const PhotoCollage: React.FC = () => {
                    }}
                  >
                     {item.url === 'placeholder' ? (
-                      <div className="placeholder" style={{ width: '80vw', height: '65vh' }}>Aggiungi foto in src/assets/photos</div>
+                      <div className="placeholder" style={{ width: '80vw', height: '65vh' }}>{SITE_CONFIG.testoPlaceholderFoto}</div>
                     ) : (
                       <img src={item.url as string} alt="Focus" style={{ width: 'auto', height: 'auto', maxWidth: '85vw', maxHeight: '65vh', objectFit: 'contain' }} />
                     )}

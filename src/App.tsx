@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { GiftBox } from './components/GiftBox';
 import { PhotoCollage } from './components/PhotoCollage';
 import { BackgroundPattern } from './components/BackgroundPattern';
+import { SITE_CONFIG } from './config';
 
 function App() {
   const [isOpen, setIsOpen] = useState(false);
@@ -50,7 +51,7 @@ function App() {
       <BackgroundPattern />
       <div className="main-content">
       <h1 className={`title ${showCollage ? 'celebration' : ''}`}>
-        {showCollage ? 'Tanti Auguri Papà! 🎉' : 'Per il Papà più Bello ❤️'}
+        {showCollage ? SITE_CONFIG.titoloAperto : SITE_CONFIG.titoloIniziale}
       </h1>
 
       {!showCollage && <GiftBox isOpen={isOpen} onClick={handleOpenInfo} />}
